@@ -1,8 +1,12 @@
 <template>
-  <v-app-bar>
-    <v-toolbar-title>i18n-Comparator</v-toolbar-title>
-    <div>Mi Portfoio</div>
-  </v-app-bar>
+  <q-header class="bg-primary text-white ">
+    <q-toolbar>
+      <q-toolbar-title>        
+        I18nComparator
+      </q-toolbar-title>
+    </q-toolbar>
+  </q-header>
 </template>
 <script setup></script>
-<style lang=""></style>
+<style>
+</style>

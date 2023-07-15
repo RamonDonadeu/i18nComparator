@@ -1,10 +1,14 @@
 <template>
-  <v-app id="inspire">
+  <q-layout view="hHh lpR fFf">
     <Header></Header>
-<slot/>
-    
-  </v-app>
+    <q-page-container>
+      <slot />
+    </q-page-container>
+  </q-layout>
 </template>
 
-<script setup>
-</script>
+<script setup></script>
+
+<style>
+@import url("../css/global.css");
+</style>

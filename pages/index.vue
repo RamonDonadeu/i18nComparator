@@ -1,110 +1,200 @@
 <template>
-  <v-main class="bg-grey-lighten-2">
-    <v-container>
-      <v-card>
-        <v-card-title>Select languages</v-card-title>
-        <v-container class="languages-container">
-          <v-list>
-            <v-list-item v-for="language in languagesFiles" :key="language.key">
-              <div class="d-flex flex-row justify-start align-center">
-                <v-btn
-                  icon="close"
-                  variant="plain"
-                  @click="remove(language.key)"
-                ></v-btn>
-                <p>
-                  {{ language.title }}
-                </p>
-              </div>
-            </v-list-item>
-            <v-list-item>
-              <div class="d-flex flex-row justify-between align-center">
-                <v-btn
-                  variant="plain"
-                  class=""
-                  @click="newLanguagePopup = !newLanguagePopup"
-                >
-                  Add New Language
-                </v-btn>
-                <div class="ml-8">OR</div>
-                <v-file-input
-                  class="mx-8"
-                  label="Import File ( JSON or JSObject )"
-                  small-chips
-                  variant="plain"
-                  density="compact"
-                ></v-file-input>
-              </div>
-            </v-list-item>
-          </v-list>
-        </v-container>
-        <v-btn>Compare</v-btn>
-      </v-card></v-container
-    >
-    <v-dialog v-model="newLanguagePopup" width="300px">
-      <v-card>
-        <VCardTitle>Add new language</VCardTitle>
-        <v-container>
-          <v-form @submit.prevent>
-            <v-text-field
-              v-model="formFields.title"
+  <div class="container">
+    <q-card class="languageManager">
+      <div class="languageManager__list">
+        <q-list>
+          <q-item v-for="language in languageFiles" :key="language.key">
+            <q-item-section>{{ language.title }}</q-item-section>
+            <q-btn
+              flat
+              round
+              color="black"
+              icon="delete"
+              @click="remove(language.key)"
+            />
+          </q-item>
+        </q-list>
+        <div class="languageManager__controllers">
+          <q-btn
+            label="Add Language"
+            @click="newLanguagePopup = !newLanguagePopup"
+          ></q-btn>
+          <div>OR</div>
+          <q-file
+            label="Pick one file"
+            borderless
+            v-model="file"
+            @update:model-value="checkFile()"
+            accept=".json,.js"
+          ></q-file>
+        </div>
+      </div>
+      <div class="languageManager__buttons">
+        <q-btn label="Compare" @click="compare"></q-btn>
+      </div>
+    </q-card>
+    <q-dialog v-model="newLanguagePopup" class="newLanguagePopup">
+      <q-card>
+        <q-card-section>
+          <q-form
+            class="newLanguagePopup__popup"
+            @submit.prevent.stop="createLanguage"
+          >
+            <q-input
               label="Language"
-            ></v-text-field>
-            <v-text-field
+              :rules="languageRules"
+              v-model="formFields.title"
+            ></q-input>
+            <q-input
+              label="Language key"
               :rules="keyRules"
               v-model="formFields.key"
-              label="Language Key"
-            ></v-text-field>
-            <v-btn type="submit" @click="createLanguage()">Create</v-btn>
-          </v-form>
-        </v-container>
-      </v-card>
-    </v-dialog>
-  </v-main>
+            ></q-input>
+            <q-btn
+              type="submit"
+              label="Create"
+              class="newLanguagePopup__form__submit"
+              outline
+              square
+            ></q-btn> </q-form
+        ></q-card-section>
+      </q-card>
+    </q-dialog>
+  </div>
 </template>
 
 <script setup>
-const languagesFiles = ref([
-  { key: "es", title: "Español" },
-  { key: "en", title: "English" },
-  { key: "de", title: "Deustch" },
-  { key: "fr", title: "French" },
-]);
+const languageFiles = ref([]);
 
 const newLanguagePopup = ref(false);
 
 const remove = (key) => {
-  const index = languagesFiles.value.findIndex(
-    (element) => element.key === key
-  );
-  languagesFiles.value.splice(index, 1);
+  const index = languageFiles.value.findIndex((element) => element.key === key);
+  languageFiles.value.splice(index, 1);
 };
 
-const formFields = ref({ title: "", key: "" });
-
+const formFields = ref({ title: "", key: "", content: "" });
+const languages = useStore();
 const createLanguage = () => {
-  const index = languagesFiles.value.findIndex(
+  const index = languageFiles.value.findIndex(
     (element) => element.key === formFields.value.key
   );
   if (index !== -1) {
     console.log("Error");
     return;
   }
-  languagesFiles.value.push(formFields.value);
+  languageFiles.value.push(formFields.value);
   newLanguagePopup.value = !newLanguagePopup.value;
-  formFields.value = { title: "", key: "" }
+  formFields.value = { title: "", key: "" };
+  languages.setLanguages(languageFiles.value);
 };
-const keyRules = [value => checkKeyExists(value)]
+const languageRules = [(val) => val !== "" || "Input is empty"];
+const keyRules = [(value) => checkKeyExists(value)];
 const checkKeyExists = (value) => {
-  console.log(value)
-  const index = languagesFiles.value.findIndex(
+  const index = languageFiles.value.findIndex(
     (element) => element.key === value
   );
   if (index !== -1) {
-    return 'Key already exists';
+    return "Key already exists";
+  }
+  if (value === "") {
+    return "Key is emtpy";
   }
   return true;
 };
+
+const file = ref(null);
+const checkFile = () => {
+  const fileName = file.value.name;
+  const fileType = fileName
+    .substring(fileName.lastIndexOf(".") + 1)
+    .toLowerCase();
+  const reader = new FileReader();
+  let content;
+  if (fileType === "js") {
+    reader.onload = (event) => {
+      content = event.target.result;
+
+      try {
+        // Find the JavaScript object using regular expressions
+        const regex = /=\s+([^;]+)\s+export/;
+        const matches = content.match(regex);
+
+        if (matches[1] !== undefined) {
+          const objectString = matches[1];
+          const parseObject = new Function(`return ${objectString}`);
+          const jsObject = parseObject();
+          const jsonData = JSON.stringify(jsObject, null, 2);
+          formFields.value.title = fileName.split(".js")[0];
+          formFields.value.content = JSON.parse(jsonData);
+          newLanguagePopup.value = true;
+          file.value = null;
+        } else {
+          console.error("No JavaScript object found in the Blob.");
+        }
+      } catch (e) {
+        console.error("Error transforming JavaScript object to JSON:", e);
+      }
+    };
+  }
+  if (fileType === "json") {
+    reader.onload = (event) => {
+      content = event.target.result;
+
+      try {
+        // Parse the JSON data
+        const jsonData = JSON.parse(content);
+        console.log("JSON data:", jsonData);
+      } catch (e) {
+        console.error("Error parsing JSON file:", e);
+      }
+    };
+  }
+
+  // Start reading the file
+  reader.readAsText(file.value);
+};
+const compare = () => {
+  return navigateTo('/compare')
+};
 </script>
 
-<style scoped></style>
+<style scoped>
+@import url("../css/global.css");
+.container {
+  align-items: center;
+  display: flex;
+  height: 100%;
+  margin: auto;
+  max-width: 1200px;
+  padding-block: 4rem;
+}
+
+.languageManager {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+}
+.languageManager__controllers {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-items: center;
+  gap: 1rem;
+  padding-inline: 1rem;
+}
+.languageManager__list button {
+  padding-right: 1rem;
+}
+
+.newLanguagePopup__popup {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  min-width: 20rem;
+}
+.q-file {
+  flex: 1;
+}
+</style>
