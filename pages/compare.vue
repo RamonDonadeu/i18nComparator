@@ -29,7 +29,7 @@
             >
               <q-input
                 :key="property + '_' + language"
-                class="languageComparator_languageColumn"
+                class="languageComparator_languageColumn align-center"
                 :placeholder="
                   property.split('.')[property.split('.').length - 1]
                 "
@@ -42,6 +42,19 @@
                   )
                 "
               >
+                <q-icon
+                  name="translate"
+                  color="blue"
+                  size="1.5rem"
+                  ref=""
+                  class="translateIcon"
+                  :style="
+                    flatLanguages[language.key][property] === '' ||
+                    flatLanguages[language.key][property] === undefined
+                      ? 'opacity:1'
+                      : 'opacity:0'
+                  "
+                ></q-icon>
               </q-input>
               <q-icon
                 v-if="
@@ -258,6 +271,7 @@ const handleScroll = (event) => {
   align-items: center;
   max-width: 20rem;
   margin-right: 2rem;
+  position: relative;
 }
 .languageComparator__inputContainer .q-icon {
   margin: 0rem 0 0 1rem;
@@ -285,5 +299,9 @@ const handleScroll = (event) => {
   overflow-x: auto;
   width: fit-content;
   padding: 0 1rem;
+}
+.translateIcon {
+  height: 100%;
+  cursor: pointer;
 }
 </style>
